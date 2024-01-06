@@ -1,0 +1,82 @@
+version: '3.1'
+
+services:
+  worker:
+    image: localhost:5000/worker:latest
+    depends_on:
+      - redis
+      - db
+    networks:
+      - back-tier
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: test
+
+  vote:
+    image: localhost:5000/vote:latest
+    volumes:
+      - ./vote:/usr/local/app
+    ports:
+      - "5002:80"
+    networks:
+      - front-tier
+      - back-tier
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  seed-data:
+    image: localhost:5000/seed-data:latest
+    depends_on:
+      - vote
+    restart: "no"
+    networks:
+      - front-tier
+
+  result:
+    image: localhost:5000/result:latest
+    depends_on:
+      - db
+    volumes:
+      - ./result:/usr/local/app
+    ports:
+      - "5001:80"
+      - "127.0.0.1:9229:9229"
+
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - "db-data:/var/lib/postgresql/data"
+      - "./healthchecks:/healthchecks"
+    healthcheck:
+      test: /healthchecks/postgres.sh
+      interval: "5s"
+    environment:
+    - POSTGRES_PASSWORD=admin
+    - POSTGRES_USER=admin
+    - POSTGRES_DB=votingsystem
+
+    networks:
+      - back-tier
+
+  redis:
+    image: redis:latest
+    volumes:
+      - "./healthchecks:/healthchecks"
+    healthcheck:
+      test: /healthchecks/redis.sh
+      interval: "5s"
+    networks:
+      - back-tier
+
+volumes:
+  db-data:
+
+networks:
+  front-tier:
+    driver: bridge
+  back-tier:
+    driver: bridge
