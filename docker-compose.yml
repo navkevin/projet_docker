@@ -7,7 +7,7 @@ services:
       - redis
       - db
     networks:
-      - back-tier
+      - cats-or-dogs-network
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: test
@@ -19,8 +19,7 @@ services:
     ports:
       - "5002:80"
     networks:
-      - front-tier
-      - back-tier
+      - cats-or-dogs-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost"]
       interval: 15s
@@ -34,7 +33,7 @@ services:
       - vote
     restart: "no"
     networks:
-      - front-tier
+      - cats-or-dogs-network
 
   result:
     image: localhost:5000/result:latest
@@ -55,12 +54,11 @@ services:
       test: /healthchecks/postgres.sh
       interval: "5s"
     environment:
-    - POSTGRES_PASSWORD=admin
-    - POSTGRES_USER=admin
-    - POSTGRES_DB=votingsystem
-
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_USER=admin
+      - POSTGRES_DB=db
     networks:
-      - back-tier
+      - cats-or-dogs-network
 
   redis:
     image: redis:latest
@@ -70,13 +68,11 @@ services:
       test: /healthchecks/redis.sh
       interval: "5s"
     networks:
-      - back-tier
+      - cats-or-dogs-network
 
 volumes:
   db-data:
 
 networks:
-  front-tier:
-    driver: bridge
-  back-tier:
+  cats-or-dogs-network:
     driver: bridge
